@@ -1,0 +1,4 @@
+discord.py
+aiosteam-api
+dotenv
+rich
