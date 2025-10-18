@@ -1,4 +1,4 @@
 discord.py
-aiosteam-api
 dotenv
 rich
+aiohttp
