@@ -152,6 +152,16 @@ async def get_friend_list(interaction: Interaction, steamid: str):
     
     await interaction.followup.send(embed=friend_list_embed)
 
+@bot.tree.command(name="search", description="Search the Steam Store for games by the search term.")
+@app_commands.describe(term="The term to search.")
+async def search(interaction: Interaction, term: str):
+    await interaction.response.defer()
+
+    response = await steam.store_search(term)
+    console.print(response)
+    
+    await interaction.followup.send("check console")
+
 
 # Events
 @bot.event
