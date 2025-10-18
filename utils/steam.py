@@ -209,13 +209,14 @@ class Steam:
             "term": search
         }
 
+        # Steam Store search API requires cc parameter to work properly
         if country_code:
             params['cc'] = country_code
         elif self._default_country_code:
             params['cc'] = self._default_country_code
         else:
-            # cc is an optional argument
-            pass
+            # Default to US if no country code is specified
+            params['cc'] = 'us'
             
         params['l'] = language if language else self._default_language
 

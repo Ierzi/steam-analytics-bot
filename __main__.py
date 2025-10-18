@@ -158,9 +158,35 @@ async def search(interaction: Interaction, term: str):
     await interaction.response.defer()
 
     response = await steam.store_search(term)
-    console.print(response)
     
-    await interaction.followup.send("check console")
+    if response['total'] == 0:
+        await interaction.followup.send(f'No games found for "{term}"')
+        return
+    
+    # Create embed for search results
+    search_embed = Embed(
+        colour=Colors.STEAM_BLUE,
+        title=f'Search results for "{term}"',
+        description=f"Found {response['total']} games"
+    )
+    
+    # Add games to embed
+    for i, game in enumerate(response['items'][:10]):
+        game_name = game['name']
+        app_id = game['id']
+        store_url = f"https://store.steampowered.com/app/{app_id}/"
+        
+        # Truncate long game names
+        if len(game_name) > 250:
+            game_name = game_name[:250] + "..."
+        
+        search_embed.add_field(
+            name=f"{i+1}. {game_name}",
+            value=f"[Store Page]({store_url})",
+            inline=False
+        )
+    
+    await interaction.followup.send(embed=search_embed)
 
 
 # Events
