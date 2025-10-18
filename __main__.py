@@ -38,7 +38,7 @@ TEST_GUILD = 1408027216733933639
 @app_commands.describe(steamid="The SteamID to get the summary from.")
 async def get_player_summary(interaction: Interaction, steamid: str):
     await interaction.response.defer()
-    summary = await steam.get_player_summaries(int(steamid))
+    summary = await steam.get_player_summaries(steamid)
     
     # OUTPUT FORMAT
     # {
@@ -103,12 +103,12 @@ async def get_player_summary(interaction: Interaction, steamid: str):
 async def get_friend_list(interaction: Interaction, steamid: str):
     # Helper commands
     async def get_username(steamid: str) -> str:
-        data = await steam.get_player_summaries(int(steamid))
+        data = await steam.get_player_summaries(steamid)
         return data['response']['players'][0]['personaname']
 
 
     await interaction.response.defer()
-    response = await steam.get_friend_list(int(steamid))
+    response = await steam.get_friend_list(steamid)
 
     # OUTPUT FORMAT
     # {
