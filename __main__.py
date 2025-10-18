@@ -1,5 +1,5 @@
 import discord
-from discord import Colour, Embed, app_commands
+from discord import Interaction, Embed, app_commands
 from discord.ext import commands
 import asyncio
 from utils.steam import Steam
@@ -36,7 +36,7 @@ TEST_GUILD = 1408027216733933639
 # Commands
 @bot.tree.command(name="getplayersummary", description="Get someone's player summary.")
 @app_commands.describe(steamid="The SteamID to get the summary from.")
-async def get_player_summary(interaction: discord.Interaction, steamid: str):
+async def get_player_summary(interaction: Interaction, steamid: str):
     await interaction.response.defer()
     summary = await steam.get_player_summaries(int(steamid))
     
@@ -74,13 +74,13 @@ async def get_player_summary(interaction: discord.Interaction, steamid: str):
     steam_id = player_summary.get("steamid")
     name = player_summary.get("personaname")
     profile_url = player_summary.get("profileurl")
-    avatar = player_summary.get("avatar") # For embed image
+    avatar = player_summary.get("avatarfull") # For embed image
     last_online = int(player_summary.get("lastlogoff"))
     created_timestamp = int(player_summary.get("timecreated"))
     country_code: str = player_summary.get("loccountrycode")
 
     # Format it to an embed
-    title = f"{name} :flag_{country_code.lower()}:" # Should convert the country code to a flag emoji
+    title = f"{name} - :flag_{country_code.lower()}:" # Should convert the country code to a flag emoji
     summary_embed = Embed(
         colour=Colors.STEAM_BLUE,
         title=title,
@@ -97,6 +97,61 @@ async def get_player_summary(interaction: discord.Interaction, steamid: str):
 
     # Send final message
     await interaction.followup.send(embed=summary_embed)
+
+@bot.tree.command(name="getfriendlist", description="Get someone's friend list.")
+@app_commands.describe(steamid="The SteamID to get the friend list from.")
+async def get_friend_list(interaction: Interaction, steamid: str):
+    # Helper commands
+    async def get_username(steamid: str) -> str:
+        data = await steam.get_player_summaries(int(steamid))
+        return data['response']['players'][0]['personaname']
+
+
+    await interaction.response.defer()
+    response = await steam.get_friend_list(int(steamid))
+
+    # OUTPUT FORMAT
+    # {
+    #     'friendslist': {
+    #         'friends': [
+    #             {'steamid': '76561198985638489', 'relationship': 'friend', 'friend_since': 1731959988},
+    #             {'steamid': '76561199204710322', 'relationship': 'friend', 'friend_since': 1732377864},
+    #             {'steamid': '76561199209323472', 'relationship': 'friend', 'friend_since': 1750702559},
+    #             {'steamid': '76561199214689897', 'relationship': 'friend', 'friend_since': 1750931217},
+    #             {'steamid': '76561199216328722', 'relationship': 'friend', 'friend_since': 1729787388},
+    #             {'steamid': '76561199250750557', 'relationship': 'friend', 'friend_since': 1732156051},
+    #             {'steamid': '76561199389575166', 'relationship': 'friend', 'friend_since': 1753898284},
+    #             {'steamid': '76561199489356195', 'relationship': 'friend', 'friend_since': 1738978669},
+    #             {'steamid': '76561199542646800', 'relationship': 'friend', 'friend_since': 1736083166},
+    #             {'steamid': '76561199557878979', 'relationship': 'friend', 'friend_since': 1732895138},
+    #             {'steamid': '76561199557946169', 'relationship': 'friend', 'friend_since': 1750961383},
+    #             {'steamid': '76561199558836623', 'relationship': 'friend', 'friend_since': 1722853473},
+    #             {'steamid': '76561199559614779', 'relationship': 'friend', 'friend_since': 1753269279},
+    #             {'steamid': '76561199638368311', 'relationship': 'friend', 'friend_since': 1736070175},
+    #             {'steamid': '76561199686591093', 'relationship': 'friend', 'friend_since': 1724417688}
+    #         ]
+    #     }
+    # }
+
+    friends: list[dict] = response['friendslist']['friends']
+    formatted_data = []  # Tuple  -> (username, relative timestamp)
+    for friend in friends:
+        username = await get_username(friend.get('steamid'))
+        relative_timestamp = to_timestamp(int(friend.get('friend_since')), 'R')
+        formatted_data.append((username, relative_timestamp))\
+    
+    friend_list_username = await get_username(steamid)
+
+    friend_list_embed = Embed(
+        colour=Colors.STEAM_BLUE,
+        title=f"{friend_list_username}'s friends",
+        description=""
+    )
+    str_formatted = [f"{u} - {friend_since}" for u, friend_since in formatted_data]
+    friend_list_embed.description += "\n".join(str_formatted)
+    
+    await interaction.followup.send(embed=friend_list_embed)
+
 
 # Events
 @bot.event

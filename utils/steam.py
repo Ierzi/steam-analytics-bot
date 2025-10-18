@@ -79,7 +79,7 @@ class Steam:
                 }
             )
     
-    async def get_friend_list(self, steam_id: int, relationship_filter: Literal["all", "friend"]):
+    async def get_friend_list(self, steam_id: int, relationship_filter: Literal["all", "friend"] = "all"):
         """Returns the friend list of any Steam user, provided their Steam Community profile visibility is set to Public."""
         return await self._get(
             url_type="BASE_URL",
