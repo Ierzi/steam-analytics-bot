@@ -23,7 +23,7 @@ class Steam:
         url_type: Literal["BASE_URL", "STORE_URL"],
         endpoint: str,
         params: dict[str, Any] = {}
-    ):
+    ) -> dict:
         full_url = f"{self.BASE_URL if url_type == 'BASE_URL' else self.STORE_URL}{endpoint}"
         params['key'] = self.api_key
         params['format'] = 'json'
@@ -55,12 +55,12 @@ class Steam:
         )
 
     @overload
-    async def get_player_summaries(self, steam_id: int): ...
+    async def get_player_summaries(self, steam_id: int) -> dict: ...
 
     @overload
-    async def get_player_summaries(self, steam_id: list[int]): ...
+    async def get_player_summaries(self, steam_id: list[int]) -> dict: ...
 
-    async def get_player_summaries(self, steam_id: Union[int, list[int]]):
+    async def get_player_summaries(self, steam_id: Union[int, list[int]]) -> dict:
         """Returns basic profile information for a single or a list of 64-bit Steam IDs."""
         if isinstance(steam_id, int):
             return await self._get(
