@@ -24,14 +24,15 @@ class Steam:
         *,
         url_type: Literal["BASE_URL", "STORE_URL"],
         endpoint: str,
-        params: dict[str, Any] = {},
+        params: Optional[dict[str, Any]] = None,
         require_api_key: bool = False
     ) -> dict:
         full_url = f"{self._BASE_URL if url_type == 'BASE_URL' else self._STORE_URL}{endpoint}"
-        if require_api_key:
-            params['key'] = self._api_key
-
-        params['format'] = 'json'
+        if params:
+            params['format'] = 'json'
+            if require_api_key:
+                params['key'] = self._api_key
+        
         async with aiohttp.ClientSession() as session:
             async with session.get(full_url, params=params, headers=self._headers) as response:
                 response.raise_for_status()
@@ -50,7 +51,7 @@ class Steam:
         )
     
     async def get_global_achievement_percentages_for_app(self, game_id: str):
-        """Returns on global achievements overview of a specific game in percentages. """
+        """Returns on global achievements overview of a specific game in percentages."""
         return await self._get(
             url_type="BASE_URL",
             endpoint="ISteamUserStats/GetGlobalAchievementPercentagesForApp/v0002/",
@@ -67,7 +68,7 @@ class Steam:
 
     async def get_player_summaries(self, steam_id: Union[str, Iterable[str]]) -> dict:
         """Returns basic profile information for a single or a list of 64-bit Steam IDs."""
-        if isinstance(steam_id, int):
+        if isinstance(steam_id, str):
             return await self._get(
                 url_type="BASE_URL",
                 endpoint="/ISteamUser/GetPlayerSummaries/v0002/",
@@ -209,7 +210,6 @@ class Steam:
             "term": search
         }
 
-        # Steam Store search API requires cc parameter to work properly
         if country_code:
             params['cc'] = country_code
         elif self._default_country_code:

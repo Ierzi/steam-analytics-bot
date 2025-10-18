@@ -33,12 +33,21 @@ class Colors:
 # Test guild
 TEST_GUILD = 1408027216733933639
 
+# Helper functions
+async def get_username(steamid: str) -> str:
+    data = await steam.get_player_summaries(steamid)
+    players = data['response']['players']
+    if not players:
+        raise ValueError(f"No player found with Steam ID: {steamid}")
+    return players[0]['personaname']
+
 # Commands
-@bot.tree.command(name="getplayersummary", description="Get someone's player summary.")
+@bot.tree.command(name=f"getplayersummary", description="Get someone's player summary.")
 @app_commands.describe(steamid="The SteamID to get the summary from.")
 async def get_player_summary(interaction: Interaction, steamid: str):
     await interaction.response.defer()
-    summary = await steam.get_player_summaries(steamid)
+    summary = await steam.get_player_summaries(steamid.strip())
+    console.print(summary)
     
     # OUTPUT FORMAT
     # {
@@ -101,12 +110,6 @@ async def get_player_summary(interaction: Interaction, steamid: str):
 @bot.tree.command(name="getfriendlist", description="Get someone's friend list.")
 @app_commands.describe(steamid="The SteamID to get the friend list from.")
 async def get_friend_list(interaction: Interaction, steamid: str):
-    # Helper commands
-    async def get_username(steamid: str) -> str:
-        data = await steam.get_player_summaries(steamid)
-        return data['response']['players'][0]['personaname']
-
-
     await interaction.response.defer()
     response = await steam.get_friend_list(steamid)
 
@@ -151,6 +154,101 @@ async def get_friend_list(interaction: Interaction, steamid: str):
     friend_list_embed.description += "\n".join(str_formatted)
     
     await interaction.followup.send(embed=friend_list_embed)
+
+@bot.tree.command(name="getrecentlyplayedgames", description="Get someone's recently played games if their profile aint private.")
+@app_commands.describe(steamid="The SteamID to get the recently played games from.")
+async def get_recently_played_games(interaction: Interaction, steamid: str):
+    await interaction.response.defer()
+    response = await steam.get_recently_played_games(steamid)
+    
+    # OUTPUT FORMAT
+    # {
+    #     'response': {
+    #         'total_count': 5,
+    #         'games': [
+    #             {
+    #                 'appid': 322170,
+    #                 'name': 'Geometry Dash',
+    #                 'playtime_2weeks': 559,
+    #                 'playtime_forever': 49556,
+    #                 'img_icon_url': '7fb2e71773468dbd98d56c733b604c92f5ab0ad4',
+    #                 'playtime_windows_forever': 49209,
+    #                 'playtime_mac_forever': 347,
+    #                 'playtime_linux_forever': 0,
+    #                 'playtime_deck_forever': 0
+    #             },
+    #             {
+    #                 'appid': 504230,
+    #                 'name': 'Celeste',
+    #                 'playtime_2weeks': 326,
+    #                 'playtime_forever': 5229,
+    #                 'img_icon_url': '04cb7aa0b497a3962e6b1655b7fd81a2cc95d18b',
+    #                 'playtime_windows_forever': 5229,
+    #                 'playtime_mac_forever': 0,
+    #                 'playtime_linux_forever': 0,
+    #                 'playtime_deck_forever': 0
+    #             },
+    #             {
+    #                 'appid': 391540,
+    #                 'name': 'Undertale',
+    #                 'playtime_2weeks': 72,
+    #                 'playtime_forever': 509,
+    #                 'img_icon_url': '2ce672b89b63ec1e70d2f12862e72eb4a33e9268',
+    #                 'playtime_windows_forever': 509,
+    #                 'playtime_mac_forever': 0,
+    #                 'playtime_linux_forever': 0,
+    #                 'playtime_deck_forever': 0
+    #             },
+    #             {
+    #                 'appid': 945360,
+    #                 'name': 'Among Us',
+    #                 'playtime_2weeks': 49,
+    #                 'playtime_forever': 338,
+    #                 'img_icon_url': 'b82c3f46da8f3c918e1c9e0d18bd6fa8fcef6801',
+    #                 'playtime_windows_forever': 338,
+    #                 'playtime_mac_forever': 0,
+    #                 'playtime_linux_forever': 0,
+    #                 'playtime_deck_forever': 0
+    #             },
+    #             {
+    #                 'appid': 460920,
+    #                 'name': 'Steep',
+    #                 'playtime_2weeks': 41,
+    #                 'playtime_forever': 234,
+    #                 'img_icon_url': '0cd871768bc488856bd5bf44a196b221fc9a878b',
+    #                 'playtime_windows_forever': 234,
+    #                 'playtime_mac_forever': 0,
+    #                 'playtime_linux_forever': 0,
+    #                 'playtime_deck_forever': 0
+    #             }
+    #         ]
+    #     }
+    # }
+
+    games: list[dict] = response['response']['games']
+    game_data = [] # directly formatted as a str
+    for game in games:
+        game_name = game.get("name")
+        game_playtime_2w = round(int(game.get("playtime_2weeks", 0)) / 60, 2)  # Hours
+        game_total_playtime = round(int(game.get("playtime_forever", 0)) / 60, 2) # Hours
+        string = f"**{game_name}** - {game_playtime_2w}/{game_total_playtime} hours"
+        game_data.append(string)
+    
+    username = await get_username(steamid)
+    rpg_embed = Embed(
+        colour=Colors.STEAM_BLUE,
+        title=f"{username}'s Steam Games",
+        description=""
+    )
+
+    rpg_embed.description += "\n".join(game_data)
+
+    await interaction.followup.send(embed=rpg_embed)
+    
+@bot.tree.command(name="currentlyplaying", description="Get someone's currently playing game if their profile is not private.")
+@app_commands.describe(steamid="SteamID (kinda lazy to put a description)")
+async def get_currently_playing(interaction: Interaction, steamid: str):
+    ...
 
 @bot.tree.command(name="search", description="Search the Steam Store for games by the search term.")
 @app_commands.describe(term="The term to search.")
