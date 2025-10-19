@@ -28,7 +28,7 @@ console = Console()
 # Types
 class Colors:
     STEAM_BLUE = 44526
-
+    DARK_STEAM_BLUE = 1779768
 
 # Test guild
 TEST_GUILD = 1408027216733933639
@@ -248,7 +248,20 @@ async def get_recently_played_games(interaction: Interaction, steamid: str):
 @bot.tree.command(name="currentlyplaying", description="Get someone's currently playing game if their profile is not private.")
 @app_commands.describe(steamid="SteamID (kinda lazy to put a description)")
 async def get_currently_playing(interaction: Interaction, steamid: str):
-    ...
+    await interaction.response.defer()
+    summary = await steam.get_player_summaries(steamid)
+    # See above for format
+    player_summary: dict = summary['response']['players'][0]
+
+    currently_playing = player_summary.get("gameextrainfo", False)
+    username = player_summary.get("personaname")
+        
+    if currently_playing:
+        await interaction.followup.send(f"{username} is currently playing **{currently_playing}**")
+        return
+
+    await interaction.followup.send(f"{username} aint playing anything.")
+
 
 @bot.tree.command(name="search", description="Search the Steam Store for games by the search term.")
 @app_commands.describe(term="The term to search.")
