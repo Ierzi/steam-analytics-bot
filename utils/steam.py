@@ -232,3 +232,5 @@ class Steam:
             url_type="STORE_URL",
             endpoint="featuredcategories/"
         )
+    
+    
